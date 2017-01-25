@@ -3,7 +3,7 @@
  :title "A Simple IIIF Service";
  :created "2017-01-19";
  :creator <http://purl.org/net/who/kanzaki#masahide> ;
- :release [:revision "0.40"; :created "2017-01-21"];
+ :release [:revision "0.41"; :created "2017-01-25"];
  :dependencies "requires PHP GD extension" ;
  :description """A minimum IIIF service for JPEG pictures without predefined tiles. Because all tiles are generated on the fly, the performance will not be efficient as a large scale public service. Maybe useful for local testing purpose.
 - define IMG_ROOT (relative path to JPEG image directory)
@@ -19,13 +19,13 @@ $path = $_SERVER["PATH_INFO"];
 if(preg_match("!^/(.*?\.jpg)(/.*)?$!", $path, $m)){
 	if(!($imgwh = @getimagesize(IMG_ROOT . $m[1]))) report_error("404");
 	if(!$m[2]){
-		gen_image($imgfile, $imgwh, array(0, 0, $imgwh[0], $imgwh[1]));
+		gen_image($m[1], $imgwh, array(0, 0, $imgwh[0], $imgwh[1]), $imgwh);
 	}elseif($m[2] == "/info.json"){
 		gen_infojson($imgwh);
 	}elseif(preg_match("!^/info.json(/.*jpg)$!", $m[2], $mm)){
-		gen_clipimg($m[1], $mm[1], $imgwh, $path);
+		gen_clipimg($m[1], $mm[1], $imgwh);
 	}else{
-		gen_clipimg($m[1], $m[2], $imgwh, $path);
+		gen_clipimg($m[1], $m[2], $imgwh);
 	}
 }else{
 	if(array_pop(preg_split("![/:\\\\]!", __FILE__)) == array_pop(explode("/", $_SERVER["SCRIPT_URI"]))){
@@ -36,7 +36,7 @@ if(preg_match("!^/(.*?\.jpg)(/.*)?$!", $path, $m)){
 }
 
 //generates clipped and resized image as IIIF service
-function gen_clipimg($imgfile, $param, $imgwh, $path){
+function gen_clipimg($imgfile, $param, $imgwh){
 	$pm = explode("/", $param);
 	$clip = calc_region($pm[1], $imgwh);
 	$size = calc_size($pm[2], $clip, $imgwh);
@@ -65,9 +65,9 @@ function calc_size($sizep, $clip, $imgwh){
 	}elseif(preg_match("/^(\d+)?,(\d+)?$/", $sizep, $m)){
 		$newsize = array($m[1], $m[2]);
 		if(!$newsize[0]){
-			$newsize[0] = round($clip[2] * $newsize[1] / $imgwh[1]);
+			$newsize[0] = round($clip[2] * $newsize[1] / $clip[3]);
 		}elseif(!$newsize[1]){
-			$newsize[1] = round($clip[3] * $newsize[0] / $imgwh[0]);
+			$newsize[1] = round($clip[3] * $newsize[0] / $clip[2]);
 		}
 	}else{
 		report_error("400", "wrong size params", $sizep);
